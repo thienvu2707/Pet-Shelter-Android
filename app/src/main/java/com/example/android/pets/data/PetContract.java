@@ -51,5 +51,13 @@ public final class PetContract {
         public static final int MALE_GENDER = 1;
         public static final int FEMALE_GENDER = 2;
         public static final int UNKNOWN_GENDER = 0;
+
+        public static boolean isValidGender(int gender)
+        {
+            if (gender == UNKNOWN_GENDER || gender == MALE_GENDER || gender == FEMALE_GENDER)
+                return true;
+            else
+                return false;
+        }
     }
 }
