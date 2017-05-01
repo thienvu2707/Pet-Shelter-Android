@@ -52,6 +52,9 @@ public class CatalogActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        //to access to database we instantiate subclass of SQLiteHelper
+        //the context is the current activity
+        mPetHelper = new PetDbHelper(this);
 //
 //      SQLiteDatabase db = mPetHelper.getReadableDatabase();
     }
@@ -64,12 +67,9 @@ public class CatalogActivity extends AppCompatActivity {
 
     private void displayDataInfo()
     {
-        //to access to database we instantiate subclass of SQLiteHelper
-        //the context is the current activity
-        mPetHelper = new PetDbHelper(this);
 
-        // create or open database to read it
-        SQLiteDatabase db = mPetHelper.getReadableDatabase();
+//        // create or open database to read it
+//        SQLiteDatabase db = mPetHelper.getReadableDatabase();
 
         //Perform a raw SQL query SELECT * FROM PETS
         //To get a cursor that contain all the row of the table
@@ -85,7 +85,11 @@ public class CatalogActivity extends AppCompatActivity {
         String selection = PetContract.PetEntry.GENDER_OF_PET + "=?";
         String[] selectionArgs = new String[] {String.valueOf(PetContract.PetEntry.FEMALE_GENDER)};
 
-        Cursor cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
+        //perform query on content provider using Content Resolver
+        //to access to the database
+        Cursor cursor = getContentResolver().query(PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
+
+//        Cursor cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
 
         TextView displayView = (TextView) findViewById(R.id.text_view_pet);
 
