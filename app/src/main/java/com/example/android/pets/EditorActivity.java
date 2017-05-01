@@ -16,7 +16,7 @@
 package com.example.android.pets;
 
 import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -31,7 +31,6 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.example.android.pets.data.PetContract;
-import com.example.android.pets.data.PetDbHelper;
 
 /**
  * Allows user to create a new pet or edit an existing one.
@@ -116,10 +115,10 @@ public class EditorActivity extends AppCompatActivity {
         String editPetWeight = mWeightEditText.getText().toString().trim();
         int changeWeightToInteger = Integer.parseInt(editPetWeight);
 
-        //call PetDbHelper to access to database
-        PetDbHelper petHelper = new PetDbHelper(this);
-        //get the database to write mode
-        SQLiteDatabase db = petHelper.getWritableDatabase();
+//        //call PetDbHelper to access to database
+//        PetDbHelper petHelper = new PetDbHelper(this);
+//        //get the database to write mode
+//        SQLiteDatabase db = petHelper.getWritableDatabase();
 
         //set ContentValue where column are key
         ContentValues contentValues = new ContentValues();
@@ -127,14 +126,17 @@ public class EditorActivity extends AppCompatActivity {
         contentValues.put(PetContract.PetEntry.BREED_OF_PET, editPetBreed);
         contentValues.put(PetContract.PetEntry.WEIGHT_OF_PET, changeWeightToInteger);
         contentValues.put(PetContract.PetEntry.GENDER_OF_PET, mGender);
-        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
+//        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
 
-        if (newRowId == -1)
+        //insert new pet into pet provider, return the Uri for the content uri for the new pet
+        Uri newRowId = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, contentValues);
+
+        if (newRowId == null)
         {
             Toast.makeText(this, "Error with saving Pet in database", Toast.LENGTH_SHORT).show();
         } else
         {
-            Toast.makeText(this, "Save Pet successful with id " + newRowId, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Save Pet successful with id " + newRowId, Toast.LENGTH_LONG).show();
         }
     }
 

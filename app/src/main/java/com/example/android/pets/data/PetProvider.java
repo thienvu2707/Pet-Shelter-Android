@@ -119,7 +119,7 @@ public class PetProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
-                insertPet(uri, contentValues);
+                return insertPet(uri, contentValues);
             default:
                 throw new IllegalArgumentException("Insertion not supported for" + uri);
         }
@@ -142,6 +142,8 @@ public class PetProvider extends ContentProvider {
             return null;
         }
 
+        //return with the new Uri with the id that append at the end
+        //like content://com.example.android.pets/pet/#id
         return ContentUris.withAppendedId(uri, id);
     }
 

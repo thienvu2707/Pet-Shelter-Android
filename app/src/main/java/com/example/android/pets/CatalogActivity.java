@@ -18,7 +18,7 @@ package com.example.android.pets;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -54,7 +54,7 @@ public class CatalogActivity extends AppCompatActivity {
         });
         //to access to database we instantiate subclass of SQLiteHelper
         //the context is the current activity
-        mPetHelper = new PetDbHelper(this);
+//        mPetHelper = new PetDbHelper(this);
 //
 //      SQLiteDatabase db = mPetHelper.getReadableDatabase();
     }
@@ -143,9 +143,9 @@ public class CatalogActivity extends AppCompatActivity {
 
     private void insertPet()
     {
-        mPetHelper = new PetDbHelper(this);
-        //Get data from the repository in write mode
-        SQLiteDatabase db = mPetHelper.getWritableDatabase();
+//        mPetHelper = new PetDbHelper(this);
+//        //Get data from the repository in write mode
+//        SQLiteDatabase db = mPetHelper.getWritableDatabase();
 
         //create new map of values
         //where column are the keys
@@ -162,9 +162,16 @@ public class CatalogActivity extends AppCompatActivity {
         // this is set to "null", then the framework will not insert a row when
         // there are no values).
         // The third argument is the ContentValues object containing the info for Toto.
-        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, values);
+//        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, values);
+//
+//        Log.v("CatalogActivity", "New row ID: " + newRowId);
 
-        Log.v("CatalogActivity", "New row ID: " + newRowId);
+        // Insert a new row for Toto into the provider using the ContentResolver.
+        // Use the {@link PetEntry#CONTENT_URI} to indicate that we want to insert
+        // into the pets database table.
+        // Receive the new content URI that will allow us to access Toto's data in the future.
+        Uri newUri = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, values);
+        Log.v("CatalogActivity", "New row ID: " + newUri);
     }
 
     @Override
