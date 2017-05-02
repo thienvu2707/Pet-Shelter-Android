@@ -1,5 +1,6 @@
 package com.example.android.pets.data;
 
+import android.content.ContentResolver;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
@@ -59,5 +60,14 @@ public final class PetContract {
             else
                 return false;
         }
+        /**
+         * The MIME type of the {@link #CONTENT_URI} for a list of pets.
+         */
+        public static final String CONTENT_LIST_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" +CONTENT_AUTHORITY + "/";
+
+        /**
+         * The MIME type of the {@link #CONTENT_URI} for a list of pets.
+         */
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/" + CONTENT_AUTHORITY + "/";
     }
 }
