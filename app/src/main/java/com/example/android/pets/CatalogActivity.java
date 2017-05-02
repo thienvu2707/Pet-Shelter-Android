@@ -53,6 +53,12 @@ public class CatalogActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        //need to find listview
+        ListView petListView = (ListView) findViewById(R.id.list);
+        //find empty view and set it when only have 0 item
+        View emptyView = findViewById(R.id.empty_view);
+        petListView.setEmptyView(emptyView);
         //to access to database we instantiate subclass of SQLiteHelper
         //the context is the current activity
 //        mPetHelper = new PetDbHelper(this);
