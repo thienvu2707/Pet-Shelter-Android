@@ -131,14 +131,17 @@ public class PetProvider extends ContentProvider {
         if (name == null) {
             throw new IllegalArgumentException("Pet required a name");
         }
+
         Integer gender = contentValues.getAsInteger(PetContract.PetEntry.GENDER_OF_PET);
         if (gender == null || !PetContract.PetEntry.isValidGender(gender)) {
             throw new IllegalArgumentException("Pet required valid gender");
         }
+
         Integer weight = contentValues.getAsInteger(PetContract.PetEntry.WEIGHT_OF_PET);
         if (weight != null && weight < 0) {
             throw new IllegalArgumentException("Pet need valid weight info");
         }
+
         //get writable database
         SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
 
@@ -177,7 +180,7 @@ public class PetProvider extends ContentProvider {
                 // so we know which row to update. Selection will be "_id=?" and selection
                 // arguments will be a String array containing the actual ID.
                 selection = PetContract.PetEntry._ID_PET + "=?";
-                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                selectionArgs = new String[] {String.valueOf(ContentUris.parseId(uri))};
                 return updatePet(uri, contentValues, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Update not supported for Uri " + uri);

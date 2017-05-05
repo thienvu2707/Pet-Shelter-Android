@@ -15,7 +15,12 @@
  */
 package com.example.android.pets;
 
+import android.app.LoaderManager;
 import android.content.ContentValues;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
@@ -35,7 +40,13 @@ import com.example.android.pets.data.PetContract;
 /**
  * Allows user to create a new pet or edit an existing one.
  */
-public class EditorActivity extends AppCompatActivity {
+public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    //Content of Uri for the existing Pet
+    private Uri mCurrentPetUri;
+
+    /** Identifier for the pet data loader */
+    private static final int EXISTING_PET_LOADER = 0;
 
     /** EditText field to enter the pet's name */
     private EditText mNameEditText;
@@ -59,6 +70,24 @@ public class EditorActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        //get the content Intent
+        Intent intent = getIntent();
+        //get the data of the Intent
+        mCurrentPetUri = intent.getData();
+
+        //check if  intent that contain the Uri or not
+        if (mCurrentPetUri == null)
+        {
+            setTitle(getString(R.string.editor_activity_title_new_pet));
+        } else
+        {
+            setTitle(getString(R.string.editor_activity_title_editor_pet));
+
+            //Initialize a loader to read the pet data from database
+            //display the current pet
+            getLoaderManager().initLoader(EXISTING_PET_LOADER, null, this);
+        }
 
         // Find all relevant views that we will need to read user input from
         mNameEditText = (EditText) findViewById(R.id.edit_pet_name);
@@ -170,5 +199,81 @@ public class EditorActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        if (mCurrentPetUri == null) {
+            return null;
+        }
+        //Since Editor Pet show all information about single pet so need projection contain all column of database
+        String[] projection = {
+                PetContract.PetEntry._ID_PET,
+                PetContract.PetEntry.NAME_OF_PET,
+                PetContract.PetEntry.BREED_OF_PET,
+                PetContract.PetEntry.GENDER_OF_PET,
+                PetContract.PetEntry.WEIGHT_OF_PET
+        };
+
+        //this loader will execute the contentProvider's query method in the background
+        return new CursorLoader(this,
+                mCurrentPetUri,
+                projection,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        //Bail early if the cursor is null or less than 1 row in the cursor
+        if (cursor == null || cursor.getCount() < 1) {
+            return;
+        }
+        //check if process moving to the first row of the cursor and reading the data
+        if (cursor.moveToFirst())
+        {
+            //find all column of pet data that needed
+            int nameColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.NAME_OF_PET);
+            int breedColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.BREED_OF_PET);
+            int genderColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.GENDER_OF_PET);
+            int weightColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.WEIGHT_OF_PET);
+
+            //extract out the value of the cursor for the given column index
+            String namePet = cursor.getString(nameColumnIndex);
+            String breedPet = cursor.getString(breedColumnIndex);
+            int genderPet = cursor.getInt(genderColumnIndex);
+            int weightPet = cursor.getInt(weightColumnIndex);
+
+            //afterward update the view on the screen with the value from database
+            mNameEditText.setText(namePet);
+            mBreedEditText.setText(breedPet);
+            mWeightEditText.setText(Integer.toString(weightPet));
+
+            switch (genderPet)
+            {
+                case PetContract.PetEntry.MALE_GENDER:
+                    mGenderSpinner.setSelection(1);
+                    break;
+                case PetContract.PetEntry.FEMALE_GENDER:
+                    mGenderSpinner.setSelection(2);
+                    break;
+                default:
+                    mGenderSpinner.setSelection(0);
+                    break;
+            }
+        }
+    }
+
+
+
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        //if the loader is invalid so clear out all the data from the input field
+        mNameEditText.setText("");
+        mBreedEditText.setText("");
+        mWeightEditText.setText("");
+        mGenderSpinner.setSelection(0);
     }
 }

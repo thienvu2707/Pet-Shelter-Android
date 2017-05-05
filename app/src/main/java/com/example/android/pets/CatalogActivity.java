@@ -15,6 +15,7 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -29,6 +30,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.example.android.pets.data.PetContract;
@@ -60,7 +62,7 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
             }
         });
 
-        //need to find listview
+        //need to find listView
         ListView petListView = (ListView) findViewById(R.id.list);
         //find empty view and set it when only have 0 item
         View emptyView = findViewById(R.id.empty_view);
@@ -72,6 +74,24 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
 
         //kick off the loader
         getLoaderManager().initLoader(PET_LOADERS, null, this);
+
+        //set on Item click listener
+        petListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                //create an intent to go to editor Activity
+                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
+
+                //form a Uri content that represent specific pet that press on
+                Uri currentPet = ContentUris.withAppendedId(PetContract.PetEntry.CONTENT_URI, id);
+
+                //set the Uri data field of the content
+                intent.setData(currentPet);
+
+                //start the activity
+                startActivity(intent);
+            }
+        });
 
         //to access to database we instantiate subclass of SQLiteHelper
         //the context is the current activity
@@ -131,8 +151,7 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
         return true;
     }
 
-    private void insertPet()
-    {
+    private void insertPet() {
 //        mPetHelper = new PetDbHelper(this);
 //        //Get data from the repository in write mode
 //        SQLiteDatabase db = mPetHelper.getWritableDatabase();
