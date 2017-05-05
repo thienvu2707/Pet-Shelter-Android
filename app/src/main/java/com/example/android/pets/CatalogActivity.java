@@ -21,6 +21,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.app.LoaderManager;
+import android.content.CursorLoader;
+import android.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -34,8 +37,11 @@ import com.example.android.pets.data.PetDbHelper;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    private static final int PET_LOADERS = 0;
+
+    PetCursorAdapter mCursorLoader;
 
     private PetDbHelper mPetHelper;
 
@@ -59,6 +65,14 @@ public class CatalogActivity extends AppCompatActivity {
         //find empty view and set it when only have 0 item
         View emptyView = findViewById(R.id.empty_view);
         petListView.setEmptyView(emptyView);
+
+        //set up adapter
+        mCursorLoader = new PetCursorAdapter(this, null);
+        petListView.setAdapter(mCursorLoader);
+
+        //kick off the loader
+        getLoaderManager().initLoader(PET_LOADERS, null, this);
+
         //to access to database we instantiate subclass of SQLiteHelper
         //the context is the current activity
 //        mPetHelper = new PetDbHelper(this);
@@ -66,47 +80,48 @@ public class CatalogActivity extends AppCompatActivity {
 //      SQLiteDatabase db = mPetHelper.getReadableDatabase();
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        displayDataInfo();
-    }
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//        displayDataInfo();
+//    }
 
-    private void displayDataInfo()
-    {
 
-//        // create or open database to read it
-//        SQLiteDatabase db = mPetHelper.getReadableDatabase();
-
-        //Perform a raw SQL query SELECT * FROM PETS
-        //To get a cursor that contain all the row of the table
-//        Cursor cursor = db.rawQuery("SELECT * FROM " + PetContract.PetEntry.TABLE_NAME, null);
-
-        String[] projection = {
-                PetContract.PetEntry._ID_PET,
-                PetContract.PetEntry.NAME_OF_PET,
-                PetContract.PetEntry.BREED_OF_PET,
-                PetContract.PetEntry.GENDER_OF_PET,
-                PetContract.PetEntry.WEIGHT_OF_PET
-        };
-        String selection = PetContract.PetEntry.GENDER_OF_PET + "=?";
-        String[] selectionArgs = new String[] {String.valueOf(PetContract.PetEntry.FEMALE_GENDER)};
-
-        //perform query on content provider using Content Resolver
-        //to access to the database
-        Cursor cursor = getContentResolver().query(PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
-
-//        Cursor cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
-
-        //find the List View
-        ListView listView = (ListView) findViewById(R.id.list);
-
-        //setup an Adapter to create list item for each row of database in Cursor
-        PetCursorAdapter adapter = new PetCursorAdapter(this, cursor);
-
-        listView.setAdapter(adapter);
-
-    }
+//    private void displayDataInfo()
+//    {
+//
+////        // create or open database to read it
+////        SQLiteDatabase db = mPetHelper.getReadableDatabase();
+//
+//        //Perform a raw SQL query SELECT * FROM PETS
+//        //To get a cursor that contain all the row of the table
+////        Cursor cursor = db.rawQuery("SELECT * FROM " + PetContract.PetEntry.TABLE_NAME, null);
+//
+//        String[] projection = {
+//                PetContract.PetEntry._ID_PET,
+//                PetContract.PetEntry.NAME_OF_PET,
+//                PetContract.PetEntry.BREED_OF_PET,
+//                PetContract.PetEntry.GENDER_OF_PET,
+//                PetContract.PetEntry.WEIGHT_OF_PET
+//        };
+//        String selection = PetContract.PetEntry.GENDER_OF_PET + "=?";
+//        String[] selectionArgs = new String[] {String.valueOf(PetContract.PetEntry.FEMALE_GENDER)};
+//
+//        //perform query on content provider using Content Resolver
+//        //to access to the database
+//        Cursor cursor = getContentResolver().query(PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
+//
+////        Cursor cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
+//
+//        //find the List View
+//        ListView listView = (ListView) findViewById(R.id.list);
+//
+//        //setup an Adapter to create list item for each row of database in Cursor
+//        PetCursorAdapter adapter = new PetCursorAdapter(this, cursor);
+//
+//        listView.setAdapter(adapter);
+//
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -156,7 +171,7 @@ public class CatalogActivity extends AppCompatActivity {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertPet();
-                displayDataInfo();
+//                displayDataInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -166,4 +181,22 @@ public class CatalogActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        //Define the projection that specifies the column that we need
+        String[] projection = {PetContract.PetEntry._ID_PET, PetContract.PetEntry.NAME_OF_PET, PetContract.PetEntry.BREED_OF_PET};
+        return new CursorLoader(this, PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        //Update new Cursor that contain the updated data
+        mCursorLoader.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        //callback called when the data need to be deleted
+        mCursorLoader.swapCursor(null);
+    }
 }

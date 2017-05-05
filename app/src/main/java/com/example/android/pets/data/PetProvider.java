@@ -91,28 +91,11 @@ public class PetProvider extends ContentProvider {
                 throw new IllegalArgumentException("Cannot query unknown Uri" + uri);
         }
 
+        //set notification Uri on the Cursor
+        //to know the data content Uri the Cursor created
+        //data in Uri changes, let us know to update Cursor
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
         return cursor;
-    }
-
-    /**
-     * Return the MIME type of the data for the content Uri
-     *
-     * @param uri
-     * @return
-     */
-    @Nullable
-    @Override
-    public String getType(@NonNull Uri uri) {
-        final int match = sUriMatcher.match(uri);
-        switch (match)
-        {
-            case PETS:
-                return PetContract.PetEntry.CONTENT_LIST_TYPE;
-            case PETS_ID:
-                return PetContract.PetEntry.CONTENT_ITEM_TYPE;
-            default:
-                throw new IllegalArgumentException("Unknown Uri " + uri + "with match");
-        }
     }
 
     /**
@@ -166,38 +149,12 @@ public class PetProvider extends ContentProvider {
             return null;
         }
 
+        //notify all listener that data has change for the pet content Uri
+        getContext().getContentResolver().notifyChange(uri, null);
+
         //return with the new Uri with the id that append at the end
         //like content://com.example.android.pets/pet/#id
         return ContentUris.withAppendedId(uri, id);
-    }
-
-    /**
-     * Delete the data that given from the selection and selection arguments
-     *
-     * @param uri
-     * @param selection
-     * @param selectionArgs
-     * @return
-     */
-    @Override
-    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
-        //get a writable database
-        SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
-
-        final int match = sUriMatcher.match(uri);
-        switch (match)
-        {
-            case PETS:
-                //Delete all row that match selection and selectionArgs
-                return database.delete(PetContract.PetEntry.TABLE_NAME, selection, selectionArgs);
-            case PETS_ID:
-                //delete single row define by Uri id
-                selection = PetContract.PetEntry._ID_PET + "=?";
-                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
-                return database.delete(PetContract.PetEntry.TABLE_NAME, selection, selectionArgs);
-            default:
-                throw new IllegalArgumentException("Delete not supported Uri" + uri);
-        }
     }
 
     /**
@@ -270,7 +227,78 @@ public class PetProvider extends ContentProvider {
         //Otherwise, get writable database to update the data
         SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
 
+        //perform update and get the number affected in database
+       int rowUpdated = database.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+
+        //check if row updated or not
+        if (rowUpdated != 0)
+        {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+
         //return the number of databases row affected by update statement
-        return database.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+        return rowUpdated;
+    }
+
+    /**
+     * Delete the data that given from the selection and selection arguments
+     *
+     * @param uri
+     * @param selection
+     * @param selectionArgs
+     * @return
+     */
+    @Override
+    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
+        //get a writable database
+        SQLiteDatabase database = mPetDbHelper.getWritableDatabase();
+
+        //track the number of row need to be deleted
+        int rowDeleted;
+
+        final int match = sUriMatcher.match(uri);
+        switch (match)
+        {
+            case PETS:
+                //Delete all row that match selection and selectionArgs
+                rowDeleted =  database.delete(PetContract.PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case PETS_ID:
+                //delete single row define by Uri id
+                selection = PetContract.PetEntry._ID_PET + "=?";
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                rowDeleted = database.delete(PetContract.PetEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            default:
+                throw new IllegalArgumentException("Delete not supported Uri" + uri);
+        }
+        //check if 1 or more row were deleted then notify listener
+        if (rowDeleted != 0)
+        {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+
+        return rowDeleted;
+    }
+
+    /**
+     * Return the MIME type of the data for the content Uri
+     *
+     * @param uri
+     * @return
+     */
+    @Nullable
+    @Override
+    public String getType(@NonNull Uri uri) {
+        final int match = sUriMatcher.match(uri);
+        switch (match)
+        {
+            case PETS:
+                return PetContract.PetEntry.CONTENT_LIST_TYPE;
+            case PETS_ID:
+                return PetContract.PetEntry.CONTENT_ITEM_TYPE;
+            default:
+                throw new IllegalArgumentException("Unknown Uri " + uri + "with match");
+        }
     }
 }
