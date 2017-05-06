@@ -45,19 +45,29 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     //Content of Uri for the existing Pet
     private Uri mCurrentPetUri;
 
-    /** Identifier for the pet data loader */
+    /**
+     * Identifier for the pet data loader
+     */
     private static final int EXISTING_PET_LOADER = 0;
 
-    /** EditText field to enter the pet's name */
+    /**
+     * EditText field to enter the pet's name
+     */
     private EditText mNameEditText;
 
-    /** EditText field to enter the pet's breed */
+    /**
+     * EditText field to enter the pet's breed
+     */
     private EditText mBreedEditText;
 
-    /** EditText field to enter the pet's weight */
+    /**
+     * EditText field to enter the pet's weight
+     */
     private EditText mWeightEditText;
 
-    /** EditText field to enter the pet's gender */
+    /**
+     * EditText field to enter the pet's gender
+     */
     private Spinner mGenderSpinner;
 
     /**
@@ -77,11 +87,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mCurrentPetUri = intent.getData();
 
         //check if  intent that contain the Uri or not
-        if (mCurrentPetUri == null)
-        {
+        if (mCurrentPetUri == null) {
             setTitle(getString(R.string.editor_activity_title_new_pet));
-        } else
-        {
+        } else {
             setTitle(getString(R.string.editor_activity_title_editor_pet));
 
             //Initialize a loader to read the pet data from database
@@ -137,8 +145,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         });
     }
 
-    private void insertPets()
-    {
+    private void insertPets() {
         String editPetName = mNameEditText.getText().toString().trim();
         String editPetBreed = mBreedEditText.getText().toString();
         String editPetWeight = mWeightEditText.getText().toString().trim();
@@ -160,11 +167,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         //insert new pet into pet provider, return the Uri for the content uri for the new pet
         Uri newRowId = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, contentValues);
 
-        if (newRowId == null)
-        {
+        if (newRowId == null) {
             Toast.makeText(this, "Error with saving Pet in database", Toast.LENGTH_SHORT).show();
-        } else
-        {
+        } else {
             Toast.makeText(this, "Save Pet successful with id " + newRowId, Toast.LENGTH_LONG).show();
         }
     }
@@ -203,10 +208,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        if (mCurrentPetUri == null) {
-            return null;
-        }
-        //Since Editor Pet show all information about single pet so need projection contain all column of database
+        //Since editor pet activity need to show all pet attribute
+        //show we need to have projection contain all column of pet table
         String[] projection = {
                 PetContract.PetEntry._ID_PET,
                 PetContract.PetEntry.NAME_OF_PET,
@@ -215,7 +218,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 PetContract.PetEntry.WEIGHT_OF_PET
         };
 
-        //this loader will execute the contentProvider's query method in the background
+        //loader will execute the contentProvider's query method on a background thread
         return new CursorLoader(this,
                 mCurrentPetUri,
                 projection,
@@ -226,32 +229,29 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-        //Bail early if the cursor is null or less than 1 row in the cursor
+        //Bail early if the cursor is null or there is less than 1 row in cursor
         if (cursor == null || cursor.getCount() < 1) {
             return;
         }
-        //check if process moving to the first row of the cursor and reading the data
-        if (cursor.moveToFirst())
-        {
-            //find all column of pet data that needed
+
+        //proceed with moving to the first row of the cursor and reading data from it
+        if (cursor.moveToFirst()) {
             int nameColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.NAME_OF_PET);
             int breedColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.BREED_OF_PET);
             int genderColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.GENDER_OF_PET);
             int weightColumnIndex = cursor.getColumnIndex(PetContract.PetEntry.WEIGHT_OF_PET);
 
-            //extract out the value of the cursor for the given column index
-            String namePet = cursor.getString(nameColumnIndex);
-            String breedPet = cursor.getString(breedColumnIndex);
-            int genderPet = cursor.getInt(genderColumnIndex);
-            int weightPet = cursor.getInt(weightColumnIndex);
+            //extract the value of the cursor from given index
+            String name = cursor.getString(nameColumnIndex);
+            String breed = cursor.getString(breedColumnIndex);
+            int gender = cursor.getInt(genderColumnIndex);
+            int weight = cursor.getInt(weightColumnIndex);
 
-            //afterward update the view on the screen with the value from database
-            mNameEditText.setText(namePet);
-            mBreedEditText.setText(breedPet);
-            mWeightEditText.setText(Integer.toString(weightPet));
-
-            switch (genderPet)
-            {
+            //update the views on the screen with the value from the database
+            mNameEditText.setText(name);
+            mBreedEditText.setText(breed);
+            mWeightEditText.setText(Integer.toString(weight));
+            switch (gender) {
                 case PetContract.PetEntry.MALE_GENDER:
                     mGenderSpinner.setSelection(1);
                     break;
@@ -265,12 +265,8 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         }
     }
 
-
-
-
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        //if the loader is invalid so clear out all the data from the input field
         mNameEditText.setText("");
         mBreedEditText.setText("");
         mWeightEditText.setText("");

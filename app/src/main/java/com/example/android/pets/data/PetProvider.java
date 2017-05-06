@@ -82,7 +82,7 @@ public class PetProvider extends ContentProvider {
                 cursor = database.query(PetContract.PetEntry.TABLE_NAME, projections, selection, selectionArgs, null, null, sortOrder);
                 break;
             case PETS_ID:
-                selection = PetContract.PetEntry._ID_PET = "=?";
+                selection = PetContract.PetEntry._ID_PET + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
                 //perform a query return a cursor contain row of table
                 cursor = database.query(PetContract.PetEntry.TABLE_NAME, projections, selection, selectionArgs, null, null, sortOrder);

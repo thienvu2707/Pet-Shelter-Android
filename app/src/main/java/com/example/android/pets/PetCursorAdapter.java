@@ -52,7 +52,7 @@ public class PetCursorAdapter extends CursorAdapter {
      */
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
-        //first need to find list itemt
+        //first need to find list item
         TextView name = (TextView) view.findViewById(R.id.name);
         TextView summary = (TextView) view.findViewById(R.id.summary);
 
