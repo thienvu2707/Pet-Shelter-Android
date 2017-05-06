@@ -18,16 +18,19 @@ package com.example.android.pets;
 import android.app.LoaderManager;
 import android.content.ContentValues;
 import android.content.CursorLoader;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -76,6 +79,22 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
      */
     private int mGender = PetContract.PetEntry.UNKNOWN_GENDER;
 
+    /**boolean flag that keeps track of whether the pet has been edited or not*/
+    private boolean mPetHasChanged = false;
+
+    /**
+     * OnTouchListener that listens for any user touches on View
+     * Implying that they are modifying the view,
+     * we change mPetHasChanged boolean to true
+     */
+    private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            mPetHasChanged = true;
+            return false;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,6 +108,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         //check if  intent that contain the Uri or not
         if (mCurrentPetUri == null) {
             setTitle(getString(R.string.editor_activity_title_new_pet));
+
+            //invalid option menu, so the "delete" menu option can be hidden
+            invalidateOptionsMenu();
         } else {
             setTitle(getString(R.string.editor_activity_title_editor_pet));
 
@@ -102,6 +124,12 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mBreedEditText = (EditText) findViewById(R.id.edit_pet_breed);
         mWeightEditText = (EditText) findViewById(R.id.edit_pet_weight);
         mGenderSpinner = (Spinner) findViewById(R.id.spinner_gender);
+
+        //setup OnTouchListener on all input fields to know which has unsaved change
+        mNameEditText.setOnTouchListener(mTouchListener);
+        mBreedEditText.setOnTouchListener(mTouchListener);
+        mWeightEditText.setOnTouchListener(mTouchListener);
+        mGenderSpinner.setOnTouchListener(mTouchListener);
 
         setupSpinner();
     }
@@ -145,11 +173,21 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         });
     }
 
-    private void insertPets() {
+    /**
+     * Get user input from editor and save pet into database
+     */
+    private void savePet() {
         String editPetName = mNameEditText.getText().toString().trim();
         String editPetBreed = mBreedEditText.getText().toString();
         String editPetWeight = mWeightEditText.getText().toString().trim();
-        int changeWeightToInteger = Integer.parseInt(editPetWeight);
+
+        //check if this supposed to be a new pet
+        //check if all field editor are blank
+        if (mCurrentPetUri == null && TextUtils.isEmpty(editPetName) && TextUtils.isEmpty(editPetBreed) && TextUtils.isEmpty(editPetWeight) && mGender == PetContract.PetEntry.UNKNOWN_GENDER)
+        {
+            //since no field modified, return without new pet
+            return;
+        }
 
 //        //call PetDbHelper to access to database
 //        PetDbHelper petHelper = new PetDbHelper(this);
@@ -160,19 +198,43 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         ContentValues contentValues = new ContentValues();
         contentValues.put(PetContract.PetEntry.NAME_OF_PET, editPetName);
         contentValues.put(PetContract.PetEntry.BREED_OF_PET, editPetBreed);
+        int changeWeightToInteger = 0;
+        if (!TextUtils.isEmpty(editPetWeight))
+        {
+            changeWeightToInteger = Integer.parseInt(editPetWeight);
+        }
         contentValues.put(PetContract.PetEntry.WEIGHT_OF_PET, changeWeightToInteger);
         contentValues.put(PetContract.PetEntry.GENDER_OF_PET, mGender);
 //        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
 
-        //insert new pet into pet provider, return the Uri for the content uri for the new pet
-        Uri newRowId = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, contentValues);
+        //Check if this is a new or existing pet
+        // So the currentPetUri null or not
+        if (mCurrentPetUri == null) {
+            //insert new pet into pet provider, return the Uri for the content uri for the new pet
+            Uri newRowId = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, contentValues);
 
-        if (newRowId == null) {
-            Toast.makeText(this, "Error with saving Pet in database", Toast.LENGTH_SHORT).show();
+            //show toast depending whether insert or not
+            if (newRowId == null) {
+                Toast.makeText(this, getString(R.string.editor_activity_insert_failed), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.editor_activity_insert_successful), Toast.LENGTH_LONG).show();
+            }
         } else {
-            Toast.makeText(this, "Save Pet successful with id " + newRowId, Toast.LENGTH_LONG).show();
+            //Otherwise if there an existing pet so update the Uri content
+            //Pass new content new value
+            int rowAffected = getContentResolver().update(mCurrentPetUri, contentValues, null, null);
+
+            //show toast whether success or not
+            if (rowAffected == 0)
+            {
+                Toast.makeText(this, getString(R.string.editor_activity_update_failed), Toast.LENGTH_SHORT).show();
+            } else
+            {
+                Toast.makeText(this, getString(R.string.editor_activity_update_successful), Toast.LENGTH_SHORT).show();
+            }
         }
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -183,13 +245,25 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        //if this is new pet, hide "delete" menu item
+        if (mCurrentPetUri == null)
+        {
+            MenuItem menuItem = menu.findItem(R.id.action_delete);
+            menuItem.setVisible(false);
+        }
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // User clicked on a menu option in the app bar overflow menu
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // save what we edit
-                insertPets();
+                savePet();
                 //finish it to save
                 finish();
                 return true;
@@ -199,11 +273,49 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
-                // Navigate back to parent activity (CatalogActivity)
-                NavUtils.navigateUpFromSameTask(this);
+                //If the pet hasn't changed, continue with navigating parent activity
+                if (!mPetHasChanged)
+                {
+                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                    return true;
+                }
+
+                //Otherwise if there are unsaved changes, setup a dialog to warn user
+                //Create a click listener to handle the user warning
+                DialogInterface.OnClickListener discardButtonClickListener = new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        //user clicked "Discard" button, navigate to EditorActivity
+                        NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                    }
+                };
+
+                //show a dialog that notifies the user they have unsaved changes
+                showUnsavedChangesDialog(discardButtonClickListener);
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        //if the pet hasn't changed, continue with handling back button press
+        if (!mPetHasChanged)
+        {
+            super.onBackPressed();
+            return;
+        }
+        //Otherwise, if there unsaved changes, setup dialog
+        DialogInterface.OnClickListener discardButtonClickListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                //user clicked "Discard" button
+                finish();
+            }
+        };
+
+        //show dialog that there are unsaved
+        showUnsavedChangesDialog(discardButtonClickListener);
     }
 
     @Override
@@ -271,5 +383,29 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mBreedEditText.setText("");
         mWeightEditText.setText("");
         mGenderSpinner.setSelection(0);
+    }
+
+    private void showUnsavedChangesDialog(DialogInterface.OnClickListener discardButtonClickListener)
+    {
+        //create an AlertDialog.Builder and set the message
+        //click listener for the positive or negatie button on the dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setMessage(R.string.unsaved_changes_dialog_msg);
+        builder.setPositiveButton(R.string.discard, discardButtonClickListener);
+        builder.setNegativeButton(R.string.keep_editing, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int id) {
+                //user clicked the "keep editing" button so dismiss the dialog
+                if (dialogInterface != null)
+                {
+                    dialogInterface.dismiss();
+                }
+            }
+        });
+
+        //create and show the AlertDialog
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 }
