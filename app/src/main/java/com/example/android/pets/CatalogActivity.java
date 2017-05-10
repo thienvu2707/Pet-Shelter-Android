@@ -100,48 +100,6 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
 //      SQLiteDatabase db = mPetHelper.getReadableDatabase();
     }
 
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        displayDataInfo();
-//    }
-
-
-//    private void displayDataInfo()
-//    {
-//
-////        // create or open database to read it
-////        SQLiteDatabase db = mPetHelper.getReadableDatabase();
-//
-//        //Perform a raw SQL query SELECT * FROM PETS
-//        //To get a cursor that contain all the row of the table
-////        Cursor cursor = db.rawQuery("SELECT * FROM " + PetContract.PetEntry.TABLE_NAME, null);
-//
-//        String[] projection = {
-//                PetContract.PetEntry._ID_PET,
-//                PetContract.PetEntry.NAME_OF_PET,
-//                PetContract.PetEntry.BREED_OF_PET,
-//                PetContract.PetEntry.GENDER_OF_PET,
-//                PetContract.PetEntry.WEIGHT_OF_PET
-//        };
-//        String selection = PetContract.PetEntry.GENDER_OF_PET + "=?";
-//        String[] selectionArgs = new String[] {String.valueOf(PetContract.PetEntry.FEMALE_GENDER)};
-//
-//        //perform query on content provider using Content Resolver
-//        //to access to the database
-//        Cursor cursor = getContentResolver().query(PetContract.PetEntry.CONTENT_URI, projection, null, null, null);
-//
-////        Cursor cursor = db.query(PetContract.PetEntry.TABLE_NAME, projection, null, null, null, null, null);
-//
-//        //find the List View
-//        ListView listView = (ListView) findViewById(R.id.list);
-//
-//        //setup an Adapter to create list item for each row of database in Cursor
-//        PetCursorAdapter adapter = new PetCursorAdapter(this, cursor);
-//
-//        listView.setAdapter(adapter);
-//
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -164,23 +122,22 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
         values.put(PetContract.PetEntry.GENDER_OF_PET, PetContract.PetEntry.MALE_GENDER);
         values.put(PetContract.PetEntry.WEIGHT_OF_PET, 7);
 
-        // Insert a new row for Toto in the database, returning the ID of that new row.
-        // The first argument for db.insert() is the pets table name.
-        // The second argument provides the name of a column in which the framework
-        // can insert NULL in the event that the ContentValues is empty (if
-        // this is set to "null", then the framework will not insert a row when
-        // there are no values).
-        // The third argument is the ContentValues object containing the info for Toto.
-//        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME, null, values);
-//
-//        Log.v("CatalogActivity", "New row ID: " + newRowId);
-
         // Insert a new row for Toto into the provider using the ContentResolver.
         // Use the {@link PetEntry#CONTENT_URI} to indicate that we want to insert
         // into the pets database table.
         // Receive the new content URI that will allow us to access Toto's data in the future.
         Uri newUri = getContentResolver().insert(PetContract.PetEntry.CONTENT_URI, values);
         Log.v("CatalogActivity", "New row ID: " + newUri);
+    }
+
+    /**
+     * Helper method to delete all pet
+     */
+    private void deletePet()
+    {
+        int rowDeleted = getContentResolver().delete(PetContract.PetEntry.CONTENT_URI, null, null);
+
+        Log.v("CatalogActivity", rowDeleted + " rows delete from pet database");
     }
 
     @Override
@@ -194,7 +151,8 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
-                // Do nothing for now
+                // Delete all pet
+                deletePet();
                 return true;
         }
         return super.onOptionsItemSelected(item);
